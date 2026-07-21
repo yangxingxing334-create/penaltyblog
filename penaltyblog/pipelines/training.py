@@ -6,10 +6,9 @@ import pickle
 from dataclasses import dataclass
 from typing import Any, Optional
 
-import numpy as np
 import pandas as pd
 
-from penaltyblog.models.match_outcome_model import EPSILON, MatchOutcomeModel
+from penaltyblog.models.match_outcome_model import MatchOutcomeModel, multiclass_log_loss
 
 
 @dataclass
@@ -70,7 +69,7 @@ def train_match_outcome_pipeline(
         )
         probs = model.predict_proba(valid_df[feature_columns].to_numpy(dtype=float))
         y = valid_df[outcome_col].to_numpy(dtype=int)
-        loss = float(-np.mean(np.log(probs[np.arange(len(y)), y] + EPSILON)))
+        loss = multiclass_log_loss(probs, y)
         if loss < best_loss:
             best_loss = loss
             best_model = model
@@ -91,7 +90,11 @@ def train_match_outcome_pipeline(
         "variant": "bayesian" if bayesian else "frequentist",
         "random_state": random_state,
     }
-    return ModelBundle(model=best_model, feature_columns=feature_columns, metadata=metadata)
+    return ModelBundle(
+        model=best_model,
+        feature_columns=feature_columns,
+        metadata=metadata,
+    )
 
 
 def save_model_bundle(bundle: ModelBundle, path: str) -> None:

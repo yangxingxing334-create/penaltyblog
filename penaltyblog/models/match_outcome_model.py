@@ -17,6 +17,16 @@ EPSILON = 1e-12
 MIN_TEMPERATURE = 1e-6
 
 
+def multiclass_log_loss(
+    probs: np.ndarray, y: np.ndarray, sample_weight: Optional[np.ndarray] = None
+) -> float:
+    """Compute numerically stable multiclass log loss."""
+    losses = -np.log(probs[np.arange(len(y)), y] + EPSILON)
+    if sample_weight is None:
+        return float(np.mean(losses))
+    return float(np.average(losses, weights=sample_weight))
+
+
 @dataclass
 class CalibrationResult:
     """Result of probability calibration."""
@@ -122,9 +132,7 @@ class MatchOutcomeModel:
         weights, bias = self._split_params(params, X.shape[1])
         logits = X @ weights + bias
         probs = softmax(logits, axis=1)
-        nll = -np.average(
-            np.log(probs[np.arange(len(y)), y] + EPSILON), weights=sample_weight
-        )
+        nll = multiclass_log_loss(probs, y, sample_weight=sample_weight)
 
         if self.bayesian:
             reg = np.sum(weights * weights) / (2.0 * self.prior_variance)
@@ -207,9 +215,7 @@ class MatchOutcomeModel:
         def loss(temp_arr: np.ndarray) -> float:
             temp = max(float(temp_arr[0]), MIN_TEMPERATURE)
             probs = softmax(logits / temp, axis=1)
-            return float(
-                -np.mean(np.log(probs[np.arange(len(y_arr)), y_arr] + EPSILON))
-            )
+            return multiclass_log_loss(probs, y_arr)
 
         res = minimize(loss, x0=np.array([1.0]), bounds=[(1e-3, 100.0)], method="L-BFGS-B")
         if not res.success:

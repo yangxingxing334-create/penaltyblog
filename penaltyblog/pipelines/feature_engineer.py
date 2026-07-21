@@ -7,8 +7,8 @@ import pandas as pd
 
 
 def _safe_ratio(num: pd.Series, den: pd.Series) -> pd.Series:
-    den2 = den.replace(0, np.nan)
-    return (num / den2).replace([np.inf, -np.inf], np.nan).fillna(0.0)
+    safe_denominator = den.replace(0, np.nan)
+    return (num / safe_denominator).replace([np.inf, -np.inf], np.nan).fillna(0.0)
 
 
 def _encode_outcome(home_goals: pd.Series, away_goals: pd.Series) -> pd.Series:
