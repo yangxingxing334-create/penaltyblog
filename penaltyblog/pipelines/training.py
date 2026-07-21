@@ -9,9 +9,7 @@ from typing import Any, Optional
 import numpy as np
 import pandas as pd
 
-from penaltyblog.models.match_outcome_model import MatchOutcomeModel
-
-EPSILON = 1e-12
+from penaltyblog.models.match_outcome_model import EPSILON, MatchOutcomeModel
 
 
 @dataclass

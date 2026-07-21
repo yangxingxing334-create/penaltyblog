@@ -34,7 +34,7 @@ def test_fetch_statsbomb_matches_normalizes_and_filters(monkeypatch):
             "away_score": [0, 0, 1],
         }
     )
-    monkeypatch.setattr(Flow, "statsbomb", _FakeStatsBomb(raw), raising=False)
+    monkeypatch.setattr(Flow, "statsbomb", _FakeStatsBomb(raw))
 
     out = fetch_statsbomb_matches(2, 44, start_date="2023-02-01", end_date="2023-03-01")
     assert list(out["match_id"]) == [2, 3]
