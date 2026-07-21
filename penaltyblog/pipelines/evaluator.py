@@ -47,9 +47,11 @@ def market_profitability_analysis(
     edges = probs - implied
     picks = edges.argmax(axis=1)
 
-    expected_return = np.mean(decimal_odds[np.arange(len(picks)), picks] * probs[np.arange(len(picks)), picks] - 1.0)
+    pick_odds = decimal_odds[np.arange(len(picks)), picks]
+    pick_probs = probs[np.arange(len(picks)), picks]
+    expected_return = np.mean(pick_odds * pick_probs - 1.0)
     won = (picks == y_true).astype(float)
-    realized_return = np.mean(won * decimal_odds[np.arange(len(picks)), picks] - 1.0)
+    realized_return = np.mean(won * pick_odds - 1.0)
     return {
         "expected_roi": float(expected_return),
         "realized_roi": float(realized_return),

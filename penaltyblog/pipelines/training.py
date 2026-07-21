@@ -11,6 +11,8 @@ import pandas as pd
 
 from penaltyblog.models.match_outcome_model import MatchOutcomeModel
 
+EPSILON = 1e-12
+
 
 @dataclass
 class ModelBundle:
@@ -70,7 +72,7 @@ def train_match_outcome_pipeline(
         )
         probs = model.predict_proba(valid_df[feature_columns].to_numpy(dtype=float))
         y = valid_df[outcome_col].to_numpy(dtype=int)
-        loss = float(-np.mean(np.log(probs[np.arange(len(y)), y] + 1e-12)))
+        loss = float(-np.mean(np.log(probs[np.arange(len(y)), y] + EPSILON)))
         if loss < best_loss:
             best_loss = loss
             best_model = model

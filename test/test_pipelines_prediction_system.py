@@ -31,6 +31,12 @@ def _matches_df():
 
 def test_feature_engineering_training_prediction_evaluation_flow():
     feats = engineer_match_features(_matches_df())
+    raw = _matches_df()
+
+    for team in ["A", "B", "C"]:
+        home_codes = feats.loc[raw["home_team"] == team, "home_team_code"]
+        away_codes = feats.loc[raw["away_team"] == team, "away_team_code"]
+        assert set(home_codes.unique()) == set(away_codes.unique())
 
     feature_columns = [
         "home_shots",

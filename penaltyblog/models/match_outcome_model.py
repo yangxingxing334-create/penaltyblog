@@ -12,6 +12,8 @@ from scipy.special import softmax
 
 
 OUTCOME_LABELS = np.array(["home_win", "draw", "away_win"])
+N_CLASSES = 3
+EPSILON = 1e-12
 
 
 @dataclass
@@ -98,15 +100,15 @@ class MatchOutcomeModel:
             raise ValueError("X and y must have the same number of rows.")
         if X.shape[0] == 0:
             raise ValueError("X must contain at least one sample.")
-        valid = np.isin(y, np.arange(3))
+        valid = np.isin(y, np.arange(N_CLASSES))
         if not bool(np.all(valid)):
             raise ValueError("y values must be encoded as 0, 1, 2.")
 
     @staticmethod
     def _split_params(params: np.ndarray, n_features: int) -> tuple[np.ndarray, np.ndarray]:
-        n_logits = n_features * 3
-        weights = params[:n_logits].reshape(n_features, 3)
-        bias = params[n_logits : n_logits + 3]
+        n_logits = n_features * N_CLASSES
+        weights = params[:n_logits].reshape(n_features, N_CLASSES)
+        bias = params[n_logits : n_logits + N_CLASSES]
         return weights, bias
 
     def _objective(
@@ -119,7 +121,9 @@ class MatchOutcomeModel:
         weights, bias = self._split_params(params, X.shape[1])
         logits = X @ weights + bias
         probs = softmax(logits, axis=1)
-        nll = -np.average(np.log(probs[np.arange(len(y)), y] + 1e-12), weights=sample_weight)
+        nll = -np.average(
+            np.log(probs[np.arange(len(y)), y] + EPSILON), weights=sample_weight
+        )
 
         if self.bayesian:
             reg = np.sum(weights * weights) / (2.0 * self.prior_variance)
@@ -149,7 +153,11 @@ class MatchOutcomeModel:
 
         self.feature_names_ = feature_names
         rng = np.random.default_rng(self.random_state)
-        init = rng.normal(loc=0.0, scale=0.01, size=(X_arr.shape[1] * 3 + 3,))
+        init = rng.normal(
+            loc=0.0,
+            scale=0.01,
+            size=(X_arr.shape[1] * N_CLASSES + N_CLASSES,),
+        )
 
         res = minimize(
             self._objective,
@@ -198,7 +206,9 @@ class MatchOutcomeModel:
         def loss(temp_arr: np.ndarray) -> float:
             temp = max(float(temp_arr[0]), 1e-6)
             probs = softmax(logits / temp, axis=1)
-            return float(-np.mean(np.log(probs[np.arange(len(y_arr)), y_arr] + 1e-12)))
+            return float(
+                -np.mean(np.log(probs[np.arange(len(y_arr)), y_arr] + EPSILON))
+            )
 
         res = minimize(loss, x0=np.array([1.0]), bounds=[(1e-3, 100.0)], method="L-BFGS-B")
         if not res.success:
