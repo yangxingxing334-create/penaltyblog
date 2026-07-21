@@ -14,6 +14,7 @@ from scipy.special import softmax
 OUTCOME_LABELS = np.array(["home_win", "draw", "away_win"])
 N_CLASSES = 3
 EPSILON = 1e-12
+MIN_TEMPERATURE = 1e-6
 
 
 @dataclass
@@ -186,7 +187,7 @@ class MatchOutcomeModel:
 
         logits = X_arr @ self._weights + self._bias
         if calibrated:
-            logits = logits / max(self._temperature, 1e-6)
+            logits = logits / max(self._temperature, MIN_TEMPERATURE)
         return softmax(logits, axis=1)
 
     def predict(self, X: Any, calibrated: bool = True) -> np.ndarray:
@@ -204,7 +205,7 @@ class MatchOutcomeModel:
         logits = X_arr @ self._weights + self._bias
 
         def loss(temp_arr: np.ndarray) -> float:
-            temp = max(float(temp_arr[0]), 1e-6)
+            temp = max(float(temp_arr[0]), MIN_TEMPERATURE)
             probs = softmax(logits / temp, axis=1)
             return float(
                 -np.mean(np.log(probs[np.arange(len(y_arr)), y_arr] + EPSILON))

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Iterable
-
 import numpy as np
 import pandas as pd
 
@@ -80,7 +78,7 @@ def engineer_match_features(
     df["away_team_code"] = pd.Categorical(df["away_team"], categories=team_categories).codes
     df["outcome"] = _encode_outcome(df["home_goals"], df["away_goals"])
 
-    numeric_cols: Iterable[str] = [
+    numeric_cols: list[str] = [
         "home_shots",
         "away_shots",
         "home_xg",
