@@ -72,8 +72,8 @@ def engineer_match_features(
         .fillna(0.0)
     )
 
-    teams = pd.Index(pd.concat([df["home_team"], df["away_team"]], ignore_index=True))
-    team_categories = pd.Categorical(teams).categories
+    teams = pd.concat([df["home_team"], df["away_team"]], ignore_index=True).unique()
+    team_categories = pd.Index(teams)
     df["home_team_code"] = pd.Categorical(df["home_team"], categories=team_categories).codes
     df["away_team_code"] = pd.Categorical(df["away_team"], categories=team_categories).codes
     df["outcome"] = _encode_outcome(df["home_goals"], df["away_goals"])

@@ -20,7 +20,7 @@ REQUIRED_COLUMNS = [
 ]
 
 
-def _normalise_match_columns(df: pd.DataFrame) -> pd.DataFrame:
+def _normalize_match_columns(df: pd.DataFrame) -> pd.DataFrame:
     mapping = {
         "match_id": "match_id",
         "match_date": "match_date",
@@ -53,7 +53,7 @@ def fetch_statsbomb_matches(
         season_id=season_id,
         creds=creds,
     ).flatten()
-    matches = _normalise_match_columns(flow.to_pandas())
+    matches = _normalize_match_columns(flow.to_pandas())
 
     missing = [c for c in REQUIRED_COLUMNS if c not in matches.columns]
     if missing:
