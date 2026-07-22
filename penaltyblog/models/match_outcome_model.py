@@ -187,6 +187,10 @@ class MatchOutcomeModel:
         if not self.fitted or self._weights is None or self._bias is None:
             raise ValueError("Model is not yet fitted. Call `.fit()` first.")
 
+    def _clamped_temperature(self, value: Optional[float] = None) -> float:
+        temp = self._temperature if value is None else float(value)
+        return max(temp, MIN_TEMPERATURE)
+
     def predict_proba(self, X: Any, calibrated: bool = True) -> np.ndarray:
         """Predict home/draw/away probabilities."""
         self._check_fitted()
@@ -196,7 +200,7 @@ class MatchOutcomeModel:
 
         logits = X_arr @ self._weights + self._bias
         if calibrated:
-            logits = logits / max(self._temperature, MIN_TEMPERATURE)
+            logits = logits / self._clamped_temperature()
         return softmax(logits, axis=1)
 
     def predict(self, X: Any, calibrated: bool = True) -> np.ndarray:
@@ -214,7 +218,7 @@ class MatchOutcomeModel:
         logits = X_arr @ self._weights + self._bias
 
         def loss(temp_arr: np.ndarray) -> float:
-            temp = max(float(temp_arr[0]), MIN_TEMPERATURE)
+            temp = self._clamped_temperature(float(temp_arr[0]))
             probs = softmax(logits / temp, axis=1)
             return multiclass_log_loss(probs, y_arr)
 

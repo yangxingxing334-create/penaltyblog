@@ -266,9 +266,23 @@ def save_daily_snapshot(
     dataset_name: str = "kleague",
     as_of_date: Optional[str] = None,
 ) -> dict[str, str]:
-    """Persist a reproducible daily input snapshot and metadata."""
+    """Persist a reproducible daily input snapshot and metadata.
+
+    If ``as_of_date`` is omitted, the snapshot date is derived from the latest
+    ``match_date`` in ``df`` when available; otherwise UTC current date is used.
+    """
     ts = datetime.now(timezone.utc)
-    date_tag = as_of_date or ts.strftime("%Y-%m-%d")
+    if as_of_date:
+        date_tag = as_of_date
+    elif "match_date" in df.columns and df["match_date"].notna().any():
+        date_tag = (
+            pd.to_datetime(df["match_date"], errors="coerce")
+            .dropna()
+            .max()
+            .strftime("%Y-%m-%d")
+        )
+    else:
+        date_tag = ts.strftime("%Y-%m-%d")
     base = Path(snapshot_dir).expanduser().resolve()
     base.mkdir(parents=True, exist_ok=True)
 

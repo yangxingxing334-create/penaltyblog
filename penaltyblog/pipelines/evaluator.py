@@ -10,7 +10,9 @@ import pandas as pd
 from penaltyblog.metrics import rps_average
 
 
-def _confusion_matrix(y_true: np.ndarray, y_pred: np.ndarray, n_classes: int = 3) -> np.ndarray:
+def _confusion_matrix(
+    y_true: np.ndarray, y_pred: np.ndarray, n_classes: int = 3
+) -> np.ndarray:
     mat = np.zeros((n_classes, n_classes), dtype=int)
     for t, p in zip(y_true, y_pred):
         mat[int(t), int(p)] += 1
@@ -27,8 +29,8 @@ def _expected_calibration_error(
     bins = np.linspace(0.0, 1.0, n_bins + 1)
     ece = 0.0
     for i, (lo, hi) in enumerate(zip(bins[:-1], bins[1:])):
-        is_last_confidence_bin = i == len(bins) - 2
-        if is_last_confidence_bin:
+        is_last_bin = i == len(bins) - 2
+        if is_last_bin:
             mask = (confidences >= lo) & (confidences <= hi)
         else:
             mask = (confidences >= lo) & (confidences < hi)
