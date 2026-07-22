@@ -6,6 +6,7 @@ from . import (
     matchflow,
     metrics,
     models,
+    pipelines,
     ratings,
     scrapers,
     viz,

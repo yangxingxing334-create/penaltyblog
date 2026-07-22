@@ -12,6 +12,7 @@ from .hierarchical_bayesian_goal_model import (  # noqa
 )
 from .negative_binomial import NegativeBinomialGoalModel  # noqa
 from .poisson import PoissonGoalsModel  # noqa
+from .match_outcome_model import MatchOutcomeModel  # noqa
 from .utils import dixon_coles_weights  # noqa
 from .weibull_copula import WeibullCopulaGoalsModel  # noqa
 from .zero_inf_poisson import ZeroInflatedPoissonGoalsModel  # noqa
@@ -27,6 +28,7 @@ __all__ = [
     "goal_expectancy_extended",
     "HierarchicalBayesianGoalModel",
     "NegativeBinomialGoalModel",
+    "MatchOutcomeModel",
     "PoissonGoalsModel",
     "dixon_coles_weights",
     "WeibullCopulaGoalsModel",
