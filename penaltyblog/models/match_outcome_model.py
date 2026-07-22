@@ -10,7 +10,6 @@ import numpy as np
 from scipy.optimize import minimize
 from scipy.special import softmax
 
-
 OUTCOME_LABELS = np.array(["home_win", "draw", "away_win"])
 N_CLASSES = 3
 EPSILON = 1e-12
@@ -112,11 +111,13 @@ class MatchOutcomeModel:
         if X.shape[0] == 0:
             raise ValueError("X must contain at least one sample.")
         valid = np.isin(y, np.arange(N_CLASSES))
-        if not bool(np.all(valid)):
+        if not np.all(valid):
             raise ValueError("y values must be encoded as 0, 1, 2.")
 
     @staticmethod
-    def _split_params(params: np.ndarray, n_features: int) -> tuple[np.ndarray, np.ndarray]:
+    def _split_params(
+        params: np.ndarray, n_features: int
+    ) -> tuple[np.ndarray, np.ndarray]:
         n_logits = n_features * N_CLASSES
         weights = params[:n_logits].reshape(n_features, N_CLASSES)
         bias = params[n_logits : n_logits + N_CLASSES]
@@ -217,7 +218,9 @@ class MatchOutcomeModel:
             probs = softmax(logits / temp, axis=1)
             return multiclass_log_loss(probs, y_arr)
 
-        res = minimize(loss, x0=np.array([1.0]), bounds=[(1e-3, 100.0)], method="L-BFGS-B")
+        res = minimize(
+            loss, x0=np.array([1.0]), bounds=[(1e-3, 100.0)], method="L-BFGS-B"
+        )
         if not res.success:
             raise ValueError(f"Calibration failed: {res.message}")
 

@@ -253,7 +253,7 @@ def fetch_with_fallback(
                 degraded_mode=degraded_mode,
                 quality_report=report,
             )
-        except Exception as exc:  # pragma: no cover - covered by behavior tests
+        except (TimeoutError, ValueError, RuntimeError, TypeError, KeyError) as exc:
             errors.append(f"{name} failed: {exc}")
 
     raise RuntimeError("No data source available. " + " | ".join(errors))
