@@ -2,6 +2,7 @@
 
 from .data_sources import (
     FEATURE_CONTRACT_COLUMNS,
+    OPENFOOTBALL_BRAZIL_SERIE_A_URL_TEMPLATE,
     ODDS_COLUMNS,
     REQUIRED_CONTRACT_COLUMNS,
     DataSourceResult,
@@ -15,6 +16,8 @@ from .data_sources import (
     normalize_source_frame,
     run_quality_gates,
     save_daily_snapshot,
+    split_historical_and_target_fixtures,
+    fetch_external_brazil_serie_a_contract_matches,
     validate_data_contract,
 )
 from .evaluator import evaluate_predictions, market_profitability_analysis
@@ -34,6 +37,7 @@ __all__ = [
     "FEATURE_CONTRACT_COLUMNS",
     "ModelBundle",
     "ODDS_COLUMNS",
+    "OPENFOOTBALL_BRAZIL_SERIE_A_URL_TEMPLATE",
     "QualityGateReport",
     "REQUIRED_CONTRACT_COLUMNS",
     "data_source_metrics",
@@ -51,6 +55,8 @@ __all__ = [
     "normalize_source_frame",
     "run_quality_gates",
     "save_daily_snapshot",
+    "fetch_external_brazil_serie_a_contract_matches",
+    "split_historical_and_target_fixtures",
     "save_model_bundle",
     "temporal_train_test_split",
     "train_match_outcome_pipeline",

@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Callable, Optional
 
 import pandas as pd
+import requests
 
 from penaltyblog.matchflow import Flow
 
@@ -56,6 +57,132 @@ _COLUMN_ALIASES = {
     "draw_odds": "draw_odds",
     "away_odds": "away_odds",
 }
+
+OPENFOOTBALL_BRAZIL_SERIE_A_URL_TEMPLATE = (
+    "https://raw.githubusercontent.com/openfootball/football.json/master/{season}/br.1.json"
+)
+
+
+def _normalize_team_name(team: str) -> str:
+    return " ".join(str(team).strip().split())
+
+
+def _to_alias_map(team_mappings: Optional[dict]) -> dict[str, str]:
+    if not team_mappings:
+        return {}
+
+    aliases: dict[str, str] = {}
+    for canonical, options in team_mappings.items():
+        canonical_name = _normalize_team_name(canonical)
+        aliases[canonical_name] = canonical_name
+        if isinstance(options, list):
+            for alias in options:
+                aliases[_normalize_team_name(alias)] = canonical_name
+        elif isinstance(options, str):
+            aliases[_normalize_team_name(options)] = canonical_name
+    return aliases
+
+
+def _extract_openfootball_score(score: object) -> tuple[object, object]:
+    if isinstance(score, dict):
+        ft = score.get("ft")
+        if (
+            isinstance(ft, (list, tuple))
+            and len(ft) >= 2
+            and ft[0] is not None
+            and ft[1] is not None
+        ):
+            return int(ft[0]), int(ft[1])
+        return pd.NA, pd.NA
+    if isinstance(score, (list, tuple)) and len(score) >= 2:
+        if score[0] is None or score[1] is None:
+            return pd.NA, pd.NA
+        return int(score[0]), int(score[1])
+    return pd.NA, pd.NA
+
+
+def fetch_external_brazil_serie_a_contract_matches(
+    season: int | str,
+    *,
+    source_url: Optional[str] = None,
+    team_mappings: Optional[dict] = None,
+    timeout_seconds: float = 20.0,
+) -> pd.DataFrame:
+    """Temporary external acquisition for Brazil Serie A fixtures/results.
+
+    The output is normalized into the standard pipeline contract columns.
+    """
+    url = source_url or OPENFOOTBALL_BRAZIL_SERIE_A_URL_TEMPLATE.format(season=season)
+    try:
+        response = requests.get(url, timeout=timeout_seconds)
+        response.raise_for_status()
+        payload = response.json()
+    except requests.RequestException as exc:
+        raise RuntimeError(
+            f"Temporary external source request failed ({url}): {exc}"
+        ) from exc
+    except ValueError as exc:
+        raise RuntimeError(
+            f"Temporary external source returned invalid JSON ({url})"
+        ) from exc
+
+    matches = payload.get("matches", [])
+    if not isinstance(matches, list):
+        raise RuntimeError("Temporary external source payload does not contain matches")
+
+    alias_map = _to_alias_map(team_mappings)
+    rows: list[dict[str, object]] = []
+    for match in matches:
+        if not isinstance(match, dict):
+            continue
+        home_raw = _normalize_team_name(match.get("team1", ""))
+        away_raw = _normalize_team_name(match.get("team2", ""))
+        if not home_raw or not away_raw:
+            continue
+
+        home_team = alias_map.get(home_raw, home_raw)
+        away_team = alias_map.get(away_raw, away_raw)
+        home_goals, away_goals = _extract_openfootball_score(match.get("score"))
+        rows.append(
+            {
+                "match_id": match.get("num"),
+                "match_date": match.get("date"),
+                "home_team": home_team,
+                "away_team": away_team,
+                "home_goals": home_goals,
+                "away_goals": away_goals,
+                "source": "temporary_external_openfootball",
+            }
+        )
+
+    out = ensure_contract_columns(normalize_source_frame(pd.DataFrame(rows)))
+    if out.empty:
+        raise RuntimeError("Temporary external source returned no usable matches")
+
+    out["home_goals"] = pd.to_numeric(out["home_goals"], errors="coerce")
+    out["away_goals"] = pd.to_numeric(out["away_goals"], errors="coerce")
+    out = out.sort_values(["match_date", "home_team", "away_team"]).reset_index(drop=True)
+    return out
+
+
+def split_historical_and_target_fixtures(
+    df: pd.DataFrame, target_date: str | datetime
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Split a contract DataFrame into historical results and target-day fixtures."""
+    out = df.copy()
+    out["match_date"] = pd.to_datetime(out["match_date"], errors="coerce")
+    target_ts = pd.to_datetime(target_date).normalize()
+    out["match_day"] = out["match_date"].dt.normalize()
+
+    historical = out[
+        (out["match_day"] < target_ts)
+        & out["home_goals"].notna()
+        & out["away_goals"].notna()
+    ].drop(columns=["match_day"])
+    fixtures = out[out["match_day"] == target_ts].drop(columns=["match_day"])
+    fixtures["home_goals"] = pd.to_numeric(fixtures["home_goals"], errors="coerce").fillna(0)
+    fixtures["away_goals"] = pd.to_numeric(fixtures["away_goals"], errors="coerce").fillna(0)
+    return historical.reset_index(drop=True), fixtures.reset_index(drop=True)
 
 
 @dataclass
